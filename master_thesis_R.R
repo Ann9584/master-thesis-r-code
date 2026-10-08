@@ -9,27 +9,29 @@ library(ggplot2)
 
 
 # ============================================================
-# 2. LOAD DATA INTO RSTUDIO
+# 2. LOAD DATA
 # ============================================================
 
-setwd("C:/Users/apchr/OneDrive/Desktop/USB for Thesis/Supplementary Material (S1)/master_thesis_R")
+setwd("C:/Users/apchr/OneDrive/Desktop/Supplementary Material (S3)/master_thesis_R")
 
 datei <- "vent species.xlsx"
-
 # The list includes the vent mollusc species, the species
 # examined in this study, and the decapod species,
 # together with their respective IUCN categories.
 
-vent_molluscs <- read_excel(
+# Vent molluscs
+old <- read_excel(
   datei,
   sheet = "Vent molluscs"
 )
 
-this_study <- read_excel(
+# This study
+new <- read_excel(
   datei,
   sheet = "This study"
 )
 
+# Decapoda
 decapoda <- read_excel(
   datei,
   sheet = "Decapoda"
@@ -50,16 +52,21 @@ kategorien <- c("LC", "NT", "VU", "EN", "CR")
 #First, only the predefined IUCN categories (LC, NT, VU, EN, and CR) are retained. The count(category) function then counts how many entries fall into each category. The resulting counts are renamed according to the respective dataset: Vent molluscs, This study, and Decapoda.
 #Thus, the code determines how many species in each dataset belong to each IUCN category.
 
-vent_count <- vent_molluscs %>%
+# Vent molluscs
+old_count <- old %>%
   filter(category %in% kategorien) %>%
   count(category) %>%
   rename(`Vent molluscs` = n)
 
-study_count <- this_study %>%
+
+# This study
+new_count <- new %>%
   filter(category %in% kategorien) %>%
   count(category) %>%
   rename(`This study` = n)
 
+
+# Decapoda
 decapoda_count <- decapoda %>%
   filter(category %in% kategorien) %>%
   count(category) %>%
@@ -69,14 +76,19 @@ decapoda_count <- decapoda %>%
 # ============================================================
 # 5. COMBINE DATASETS
 # ============================================================
-# This section combines the three datasets by their IUCN category. The full_join() function ensures that all IUCN categories are retained across the datasets. Missing values are replaced with zero using replace_na(), meaning that no species were recorded in that category for the respective dataset.
-#Finally, category is converted into a factor to ensure that the IUCN categories appear in the predefined order: LC, NT, VU, EN, and CR
+# This section combines the three datasets by their IUCN category.
+# The full_join() function ensures that all IUCN categories present
+# in at least one of the datasets are retained. Missing values are
+# replaced with zero using replace_na(), indicating that no species
+# were recorded in that category in the respective dataset.
+# Finally, category is converted into a factor to ensure that the
+# IUCN categories appear in the predefined order: LC, NT, VU, EN, and CR.
 
-daten <- full_join(
-  vent_count,
-  study_count,
-  by = "category"
-) %>%
+daten <- old_count %>%
+  full_join(
+    new_count,
+    by = "category"
+  ) %>%
   full_join(
     decapoda_count,
     by = "category"
@@ -87,6 +99,8 @@ daten <- full_join(
     Decapoda = replace_na(Decapoda, 0)
   )
 
+
+# Set order of IUCN categories
 daten$category <- factor(
   daten$category,
   levels = kategorien
@@ -94,38 +108,87 @@ daten$category <- factor(
 
 
 # ============================================================
-# 6. ABSOLUTE NUMBER OF SPECIES
+# 6. CALCULATE COMBINED TOTAL
 # ============================================================
-#This section reshapes the combined dataset from a wide format into a long format for plotting.
-#pivot_longer() combines the three dataset columns — Vent molluscs, This study, and Decapoda — into two new columns. The Gruppe column identifies the dataset, while Anzahl contains the corresponding number of species.
-#The factor() function then defines the order in which the three groups will appear in the plot: Vent molluscs, This study, and Decapoda.
-#This format allows ggplot2 to use the dataset group as the fill variable and display the three groups side by side for each IUCN category.
+# This section calculates the combined total number of species
+# for each IUCN category.
+# The combined total is calculated by summing the number of species
+# from the three datasets: Vent molluscs, This study, and Decapoda.
+# The resulting values are stored in a new column called
+# "Combined total".
+
+# Combined total includes:
+# Vent molluscs + This study + Decapoda
+
+
+daten <- daten %>%
+  mutate(
+    `Combined total` =
+      `Vent molluscs` +
+      `This study` +
+      Decapoda
+  )
+
+
+# ============================================================
+# 7. RESHAPE DATA FOR PLOTTING
+# ============================================================
+# This section reshapes the dataset from wide format into long format
+# to prepare the data for plotting.
+# pivot_longer() combines the columns containing the number of species
+# for the four groups — Vent molluscs, This study, Decapoda, and
+# Combined total — into two new columns.
+# The Gruppe column identifies the respective group, while Anzahl
+# contains the corresponding number of species.
+#
+# The factor() function defines the order in which the groups will
+# appear in the plot: Vent molluscs, This study, Decapoda, and
+# Combined total.
 
 daten_plot <- daten %>%
   pivot_longer(
-    cols = c(`Vent molluscs`, `This study`, Decapoda),
+    cols = c(
+      `Vent molluscs`,
+      `This study`,
+      Decapoda,
+      `Combined total`
+    ),
     names_to = "Gruppe",
     values_to = "Anzahl"
   )
 
+
+# Define order of groups in the plot
 daten_plot$Gruppe <- factor(
   daten_plot$Gruppe,
   levels = c(
     "Vent molluscs",
     "This study",
-    "Decapoda"
+    "Decapoda",
+    "Combined total"
   )
 )
 
 
 # ============================================================
-# 7. PLOT - FIGURE 6A
+# 8. PLOT - FIGURE 6A
 # ============================================================
-#This section creates the bar plot showing the absolute number of species in each IUCN category.
-#ggplot() uses the IUCN category on the x-axis and the number of species on the y-axis. The fill aesthetic separates the three datasets: Vent molluscs, This study, and Decapoda.
-#geom_col() creates the bars, while position_dodge() places the three groups side by side within each IUCN category.
-#scale_y_continuous() defines the y-axis from 0 to 80, with intervals of 10. scale_fill_manual() assigns a specific colour to each dataset.
-#Finally, labs() defines the axis and legend labels, while theme_classic() and theme() control the overall appearance of the figure and place the legend at the top.
+# This section creates a grouped bar plot showing the absolute
+# number of species in each IUCN category.
+# The IUCN category is displayed on the x-axis, while the number
+# of species is shown on the y-axis. The fill aesthetic separates
+# the four groups: Vent molluscs, This study, Decapoda, and
+# Combined total.
+#
+# geom_col() creates the bars, while position_dodge() places the
+# groups side by side within each IUCN category.
+# scale_y_continuous() sets the y-axis from 0 to 100, with
+# intervals of 10.
+# scale_fill_manual() assigns specific colours and display labels
+# to the four groups.
+# Finally, labs() defines the axis and legend labels, while
+# theme_classic() and theme() control the overall appearance
+# of the figure and place the legend at the top.
 
 ggplot(
   daten_plot,
@@ -140,15 +203,22 @@ ggplot(
     width = 0.7
   ) +
   scale_y_continuous(
-    limits = c(0, 80),
-    breaks = seq(0, 80, 10),
+    limits = c(0, 100),
+    breaks = seq(0, 100, 10),
     expand = expansion(mult = c(0, 0.03))
   ) +
   scale_fill_manual(
     values = c(
       "Vent molluscs" = "#0072B2",
       "This study" = "#D55E00",
-      "Decapoda" = "#009E73"
+      "Decapoda" = "#009E73",
+      "Combined total" = "grey50"
+    ),
+    labels = c(
+      "Vent molluscs" = "Vent mollusks",
+      "This study" = "This study",
+      "Decapoda" = "Decapoda",
+      "Combined total" = "Combined total"
     )
   ) +
   labs(
@@ -162,46 +232,25 @@ ggplot(
     legend.position = "top"
   )
 
-
 # ============================================================
-# 8. CALCULATE PERCENTAGES
+# 9. PLOT - FIGURE 6B
 # ============================================================
-#This section converts the absolute species counts into percentages for each dataset.
-#For each group (Vent molluscs, This study, and Decapoda), the number of species in each IUCN category is divided by the total number of species in that group and multiplied by 100.
-#Thus, the values represent the percentage of species within each dataset that belong to each IUCN category. The percentages for each dataset add up to 100%.
-
-daten_prozent <- daten %>%
-  mutate(
-    `Vent molluscs` = `Vent molluscs` / sum(`Vent molluscs`) * 100,
-    `This study` = `This study` / sum(`This study`) * 100,
-    Decapoda = Decapoda / sum(Decapoda) * 100
-  )
-
-
-# ============================================================
-# 9. PERCENTAGE PLOT - FIGURE 6B
-# ============================================================
-#This section creates a bar plot showing the percentage of species in each IUCN category for the three datasets.
-#First, pivot_longer() reshapes the data into a format suitable for plotting. The Gruppe column identifies the dataset, while Prozent contains the corresponding percentage.
-#The ggplot() function then places the IUCN categories on the x-axis and the percentage of species on the y-axis. position_dodge() displays the three datasets side by side for each IUCN category.
-#The y-axis ranges from 0 to 100%, and scale_fill_manual() assigns the same colours used in the previous plot: blue for Vent molluscs, orange for This study, and green for Decapoda. The remaining commands define the axis labels, legend, and overall appearance of the plot.
-
-daten_prozent_plot <- daten_prozent %>%
-  pivot_longer(
-    cols = c(`Vent molluscs`, `This study`, Decapoda),
-    names_to = "Gruppe",
-    values_to = "Prozent"
-  )
-
-daten_prozent_plot$Gruppe <- factor(
-  daten_prozent_plot$Gruppe,
-  levels = c(
-    "Vent molluscs",
-    "This study",
-    "Decapoda"
-  )
-)
-
+# This section creates a grouped bar plot showing the percentage
+# of species in each IUCN category for the four groups.
+# The IUCN category is displayed on the x-axis, while the percentage
+# of species is shown on the y-axis. The fill aesthetic separates
+# the four groups: Vent molluscs, This study, Decapoda, and
+# Combined total.
+#
+# geom_col() creates the bars, while position_dodge() places the
+# four groups side by side within each IUCN category.
+# scale_y_continuous() sets the y-axis from 0 to 100%, with
+# intervals of 10 percentage points.
+# scale_fill_manual() assigns specific colours and display labels
+# to the four groups.
+# Finally, labs() defines the axis and legend labels, while
+# theme_classic() and theme() control the overall appearance
+# of the figure and place the legend at the top.
 
 ggplot(
   daten_prozent_plot,
@@ -224,7 +273,134 @@ ggplot(
     values = c(
       "Vent molluscs" = "#0072B2",
       "This study" = "#D55E00",
-      "Decapoda" = "#009E73"
+      "Decapoda" = "#009E73",
+      "Combined total" = "grey50"
+    ),
+    labels = c(
+      "Vent molluscs" = "Vent mollusks",
+      "This study" = "This study",
+      "Decapoda" = "Decapoda",
+      "Combined total" = "Combined total"
+    )
+  ) +
+  labs(
+    x = "IUCN category",
+    y = "Percentage of species (%)",
+    fill = ""
+  ) +
+  theme_classic() +
+  theme(
+    text = element_text(size = 14),
+    legend.position = "top"
+  )
+# ============================================================
+# 10. CALCULATE PERCENTAGES
+# ============================================================
+# This section converts the absolute species counts into percentages
+# for each dataset.
+# For each group, the number of species in each IUCN category is
+# divided by the total number of species in that group and multiplied
+# by 100.
+# Thus, the values represent the percentage of species within each
+# dataset that belong to each IUCN category. The percentages for
+# each dataset add up to 100%.
+
+daten_prozent <- daten %>%
+  mutate(
+    `Vent molluscs` =
+      `Vent molluscs` / sum(`Vent molluscs`) * 100,
+    
+    `This study` =
+      `This study` / sum(`This study`) * 100,
+    
+    Decapoda =
+      Decapoda / sum(Decapoda) * 100,
+    
+    `Combined total` =
+      `Combined total` / sum(`Combined total`) * 100
+  )
+# ============================================================
+# 11. RESHAPE DATA FOR PERCENTAGE PLOT
+# ============================================================
+# This section reshapes the percentage data from wide format into
+# long format for plotting.
+# pivot_longer() combines the four group columns into two new
+# columns: Gruppe, which identifies the dataset, and Prozent,
+# which contains the corresponding percentage of species.
+# The factor() function defines the order in which the four groups
+# appear in the plot.
+
+daten_prozent_plot <- daten_prozent %>%
+  pivot_longer(
+    cols = c(
+      `Vent molluscs`,
+      `This study`,
+      Decapoda,
+      `Combined total`
+    ),
+    names_to = "Gruppe",
+    values_to = "Prozent"
+  )
+
+
+# Define order of groups
+daten_prozent_plot$Gruppe <- factor(
+  daten_prozent_plot$Gruppe,
+  levels = c(
+    "Vent molluscs",
+    "This study",
+    "Decapoda",
+    "Combined total"
+  )
+)
+
+
+# ============================================================
+# 12. PERCENTAGE PLOT
+# ============================================================
+# This section creates a grouped bar plot showing the percentage
+# of species in each IUCN category for the four groups.
+# The IUCN category is displayed on the x-axis, while the percentage
+# of species is shown on the y-axis.
+# geom_col() creates the bars, while position_dodge() places the
+# four groups side by side within each IUCN category.
+# The y-axis ranges from 0 to 100%, with intervals of 10 percentage
+# points. scale_fill_manual() assigns the same colours used in the
+# previous plot: blue for Vent molluscs, orange for This study,
+# green for Decapoda, and grey for Combined total.
+# Finally, labs() defines the axis and legend labels, while
+# theme_classic() and theme() control the overall appearance of
+# the plot and place the legend at the top.
+
+ggplot(
+  daten_prozent_plot,
+  aes(
+    x = category,
+    y = Prozent,
+    fill = Gruppe
+  )
+) +
+  geom_col(
+    position = position_dodge(width = 0.8),
+    width = 0.7
+  ) +
+  scale_y_continuous(
+    limits = c(0, 100),
+    breaks = seq(0, 100, 10),
+    expand = expansion(mult = c(0, 0.03))
+  ) +
+  scale_fill_manual(
+    values = c(
+      "Vent molluscs" = "#0072B2",
+      "This study" = "#D55E00",
+      "Decapoda" = "#009E73",
+      "Combined total" = "grey50"
+    ),
+    labels = c(
+      "Vent molluscs" = "Vent mollusks",
+      "This study" = "This study",
+      "Decapoda" = "Decapoda",
+      "Combined total" = "Combined total"
     )
   ) +
   labs(
@@ -237,32 +413,67 @@ ggplot(
     text = element_text(size = 14),
     legend.position = "top"
   )
-
-
 # ============================================================
-# 10. 100% STACKED BAR PLOT IUCN categories - FIGURE 7
+# 13. 100% STACKED BAR PLOT
+#    IUCN categories
 # ============================================================
-#This section creates a 100% stacked bar plot showing the relative distribution of IUCN categories within each dataset.
-#First, pivot_longer() reshapes the percentage data into a format suitable for plotting. The Gruppe column identifies the three datasets, while Prozent contains the percentage of species in each IUCN category.
-#In the ggplot() function, the three datasets are shown on the x-axis and the percentage of species on the y-axis. The bars are stacked according to IUCN category using fill = category. Therefore, each bar represents one dataset and sums to 100%, with the different colours showing the relative contribution of LC, NT, VU, EN, and CR species.
-#scale_fill_manual() assigns specific colours to the five IUCN categories, while scale_y_continuous() fixes the y-axis at 0–100%. The remaining commands define the axis labels, legend, and overall appearance of the plot.
+# This section prepares the percentage data for a 100% stacked
+# bar plot showing the relative distribution of IUCN categories
+# within each group.
+#
+# pivot_longer() reshapes the percentage data from wide format
+# into long format. The Gruppe column identifies the four groups:
+# Vent molluscs, This study, Decapoda, and Combined total, while
+# Prozent contains the percentage of species in each IUCN category.
+#
+# The factor() function defines the order in which the four groups
+# appear on the x-axis.
 
 daten_stacked <- daten_prozent %>%
   pivot_longer(
-    cols = c(`Vent molluscs`, `This study`, Decapoda),
+    cols = c(
+      `Vent molluscs`,
+      `This study`,
+      Decapoda,
+      `Combined total`
+    ),
     names_to = "Gruppe",
     values_to = "Prozent"
   )
 
+
+# Define order of groups
 daten_stacked$Gruppe <- factor(
   daten_stacked$Gruppe,
   levels = c(
     "Vent molluscs",
     "This study",
-    "Decapoda"
+    "Decapoda",
+    "Combined total"
   )
 )
 
+
+# ============================================================
+# 14. 100% STACKED BAR PLOT
+# ============================================================
+# This section creates a 100% stacked bar plot showing the relative
+# distribution of IUCN categories within each group.
+#
+# In the ggplot() function, the four groups are displayed on the
+# x-axis and the percentage of species is shown on the y-axis.
+# The bars are stacked according to IUCN category using
+# fill = category. Each bar therefore represents one group and
+# sums to 100%, with the different colours showing the relative
+# contribution of LC, NT, VU, EN, and CR species.
+#
+# scale_fill_manual() assigns specific colours to the five IUCN
+# categories, while scale_y_continuous() fixes the y-axis at
+# 0–100%.
+# scale_x_discrete() defines the display labels for the four groups.
+# Finally, labs() defines the axis and legend labels, while
+# theme_classic() and theme() control the overall appearance
+# of the plot and place the legend at the top.
 
 ggplot(
   daten_stacked,
@@ -272,7 +483,9 @@ ggplot(
     fill = category
   )
 ) +
-  geom_col(width = 0.7) +
+  geom_col(
+    width = 0.7
+  ) +
   scale_y_continuous(
     limits = c(0, 100),
     breaks = seq(0, 100, 10),
@@ -289,9 +502,10 @@ ggplot(
   ) +
   scale_x_discrete(
     labels = c(
-      "Vent molluscs" = "Vent molluscs",
+      "Vent molluscs" = "Vent mollusks",
       "This study" = "This study",
-      "Decapoda" = "Decapoda"
+      "Decapoda" = "Decapoda",
+      "Combined total" = "Combined total"
     )
   ) +
   labs(
@@ -304,8 +518,10 @@ ggplot(
     text = element_text(size = 14),
     legend.position = "top"
   )
+
+
 # ============================================================
-# SPECIES RICHNESS ACROSS GLOBAL 5° HEXAGONAL GRID - FIGURE 15
+# SPECIES RICHNESS ACROSS GLOBAL 5° HEXAGONAL GRID
 # ============================================================
 
 library(icosa)
@@ -319,15 +535,13 @@ library(sf)
 #The extracted latitude, longitude, and species information from all files are then combined into a single dataset called all_data. Records without valid geographic coordinates are removed.
 #Finally, coords is created as a simplified dataset containing only the longitude, latitude, and species name, which are the variables required for the subsequent spatial analysis.
 
-folder <- "C:/Users/apchr/OneDrive/Desktop/USB for Thesis/Supplementary Material (S1)/Heat maps"
+folder <- "C:/Users/apchr/OneDrive/Desktop/USB for Thesis/Graph/Heat maps"
+
 files <- list.files(
   folder,
   pattern = "\\.csv$",
   full.names = TRUE
 )
-
-files
-
 
 all_data_list <- lapply(files, function(file) {
   
@@ -440,6 +654,7 @@ coords$cell <- locate(
 # ============================================================
 # 5. CALCULATE SPECIES RICHNESS
 # ============================================================
+
 #This section calculates the species richness for each hexagonal grid cell.
 #The tapply() function groups the species records according to their assigned grid cell (coords$cell). Within each cell, unique(x) identifies the distinct species, and length() counts them.
 #Thus, species_richness represents the number of unique species occurring in each 5° hexagonal grid cell. If a species has multiple occurrence records within the same cell, it is counted only once.
@@ -503,7 +718,4 @@ points(
   pch = 20,
   cex = 0.3
 )
-
-
-
 
