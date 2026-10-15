@@ -277,7 +277,7 @@ ggplot(
       "Combined total" = "grey50"
     ),
     labels = c(
-      "Vent molluscs" = "Vent mollusks",
+      "Vent molluscs" = "Vent molluscs",
       "This study" = "This study",
       "Decapoda" = "Decapoda",
       "Combined total" = "Combined total"
@@ -397,7 +397,7 @@ ggplot(
       "Combined total" = "grey50"
     ),
     labels = c(
-      "Vent molluscs" = "Vent mollusks",
+      "Vent molluscs" = "Vent molluscs",
       "This study" = "This study",
       "Decapoda" = "Decapoda",
       "Combined total" = "Combined total"
@@ -413,6 +413,192 @@ ggplot(
     text = element_text(size = 14),
     legend.position = "top"
   )
+
+# ============================================================
+# Statistic ANALYSIS: Pearson's chi-square test of independence
+#
+# Research question:
+# Does the proportion of threatened and non-threatened species
+# differ between previously documented vent molluscs and the
+# combined group of species assessed in this study and Decapoda?
+#
+# H0 (null hypothesis):
+# The proportion of threatened and non-threatened species is
+# the same in both groups.
+#
+# H1 (alternative hypothesis):
+# The proportions differ between the two groups.
+#
+# Threatened species: VU, EN, CR
+# Non-threatened species: LC, NT
+# Significance level: alpha = 0.05
+# ============================================================
+
+
+# 1. Load and combine the species data
+# Read the three datasets from the Excel workbook.
+# Each row represents one species.
+
+file <- "vent species.xlsx"
+
+data <- bind_rows(
+  read_excel(file, sheet = "Vent molluscs") %>%
+    transmute(Dataset = "Vent molluscs", Category = category),
+  
+  read_excel(file, sheet = "This study") %>%
+    transmute(Dataset = "This study", Category = category),
+  
+  read_excel(file, sheet = "Decapoda") %>%
+    transmute(Dataset = "Decapoda", Category = category)
+) %>%
+  mutate(
+    Category = toupper(trimws(as.character(Category)))
+  ) %>%
+  filter(Category %in% c("LC", "NT", "VU", "EN", "CR")) %>%
+  mutate(
+    # Combine the newly assessed species and Decapoda
+    # into one comparison group.
+    Comparison = if_else(
+      Dataset == "Vent molluscs",
+      "Vent molluscs",
+      "This study + Decapoda"
+    ),
+    
+    # Classify species as threatened or non-threatened.
+    Threat = if_else(
+      Category %in% c("VU", "EN", "CR"),
+      "Threatened",
+      "Not threatened"
+    )
+  )
+
+
+# 2. Create the 2 x 2 contingency table
+# Count threatened and non-threatened species in each group.
+
+tab <- table(
+  factor(
+    data$Comparison,
+    levels = c("Vent molluscs", "This study + Decapoda")
+  ),
+  factor(
+    data$Threat,
+    levels = c("Threatened", "Not threatened")
+  )
+)
+
+cat("Observed counts:\n")
+print(tab)
+
+# Calculate the percentage of threatened and non-threatened
+# species within each group.
+
+percentages <- prop.table(tab, margin = 1) * 100
+
+cat("\nRow percentages (%):\n")
+print(round(percentages, 2))
+
+
+# 3. Perform Pearson's chi-square test of independence
+# The test determines whether the distribution of threatened
+# and non-threatened species differs significantly between
+# the two groups.
+
+test <- chisq.test(tab, correct = FALSE)
+
+# Expected counts show the frequencies expected under H0.
+# All expected counts exceed 5, so the chi-square approximation
+# is appropriate.
+
+cat("\nExpected counts:\n")
+print(round(test$expected, 2))
+
+cat("\nPearson's chi-square test:\n")
+print(test)
+
+
+# 4. Calculate the odds ratio and its 95% confidence interval
+# The odds ratio quantifies the difference in the odds of
+# being threatened between the two groups.
+# An odds ratio greater than 1 indicates higher odds among
+# previously documented vent molluscs.
+
+a <- tab[1, 1]
+b <- tab[1, 2]
+c <- tab[2, 1]
+d <- tab[2, 2]
+
+OR <- (a * d) / (b * c)
+
+# Calculate the standard error of the log odds ratio.
+SE <- sqrt(1/a + 1/b + 1/c + 1/d)
+
+# Calculate the 95% confidence interval using the log-Wald method.
+CI <- exp(log(OR) + c(-1, 1) * 1.96 * SE)
+
+cat("\nOdds ratio:", round(OR, 3), "\n")
+cat("95% confidence interval:", round(CI, 3), "\n")
+
+
+# 5. Calculate the difference in threatened-species percentages
+# Express the difference between the groups in percentage points.
+
+difference <- percentages[1, "Threatened"] -
+  percentages[2, "Threatened"]
+
+cat(
+  "\nDifference in threatened-species percentages:",
+  round(difference, 2),
+  "percentage points\n"
+)
+
+
+# 6. Interpret the statistical result
+# If p < 0.05, reject H0.
+# Otherwise, there is insufficient evidence to reject H0.
+
+cat("\nConclusion:\n")
+
+if (test$p.value < 0.05) {
+  cat(
+    "The difference is statistically significant (p < 0.05).\n",
+    "Reject the null hypothesis.\n"
+  )
+} else {
+  cat(
+    "The difference is not statistically significant (p >= 0.05).\n",
+    "Fail to reject the null hypothesis.\n"
+  )
+}
+
+# ============================================================
+# RESULTS
+#
+# Vent molluscs:
+# 125 threatened and 76 non-threatened species (n = 201).
+# 62.19% were threatened.
+#
+# This study + Decapoda:
+# 42 threatened and 50 non-threatened species (n = 92).
+# 45.65% were threatened.
+#
+# Pearson's chi-square test:
+# X-squared = 7.0416, df = 1, p = 0.007964.
+#
+# Odds ratio = 1.958.
+# 95% CI = 1.188–3.227.
+#
+# Difference in threatened-species proportions:
+# 16.54 percentage points.
+#
+# Interpretation:
+# The difference is statistically significant at alpha = 0.05.
+# Previously documented vent molluscs had a higher proportion
+# of threatened species than the combined comparison group.
+# The null hypothesis is rejected.
+# ============================================================
+
+
 # ============================================================
 # 13. 100% STACKED BAR PLOT
 #    IUCN categories
@@ -452,7 +638,7 @@ daten_stacked$Gruppe <- factor(
     "Combined total"
   )
 )
-
+#End of the statistics#
 
 # ============================================================
 # 14. 100% STACKED BAR PLOT
@@ -502,7 +688,7 @@ ggplot(
   ) +
   scale_x_discrete(
     labels = c(
-      "Vent molluscs" = "Vent mollusks",
+      "Vent molluscs" = "Vent molluscs",
       "This study" = "This study",
       "Decapoda" = "Decapoda",
       "Combined total" = "Combined total"
