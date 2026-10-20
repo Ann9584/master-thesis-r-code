@@ -438,8 +438,7 @@ ggplot(
 
 
 # 1. Load and combine the species data
-# Read the three datasets from the Excel workbook.
-# Each row represents one species.
+# Read the three datasets from the Excel, and preparing the data for the test. The three datasets are therefore combined into a single dataset. 
 
 file <- "vent species.xlsx"
 
@@ -532,6 +531,12 @@ d <- tab[2, 2]
 
 OR <- (a * d) / (b * c)
 
+ #   print(tab)                Threatened      Not threatened
+ # Vent molluscs                125             76
+ # This study + Decapoda         42             50
+ # To check if the calculation is correct.
+
+
 # Calculate the standard error of the log odds ratio.
 SE <- sqrt(1/a + 1/b + 1/c + 1/d)
 
@@ -599,7 +604,7 @@ if (test$p.value < 0.05) {
 # of threatened species than the combined comparison group.
 # The null hypothesis is rejected.
 # ============================================================
-
+#End of the statistics#
 
 # ============================================================
 # 13. 100% STACKED BAR PLOT
@@ -640,7 +645,6 @@ daten_stacked$Gruppe <- factor(
     "Combined total"
   )
 )
-#End of the statistics#
 
 # ============================================================
 # 14. 100% STACKED BAR PLOT
@@ -711,6 +715,7 @@ ggplot(
 # ============================================================
 # SPECIES RICHNESS ACROSS GLOBAL 5° HEXAGONAL GRID
 # ============================================================
+# packages needed: 
 
 library(icosa)
 library(sf)
