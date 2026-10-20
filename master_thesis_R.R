@@ -1,6 +1,7 @@
 # ============================================================
 # 1. PACKAGES
 # ============================================================
+# Packages that were needed for the following Coded Commands:
 
 library(readxl)
 library(dplyr)
@@ -11,7 +12,7 @@ library(ggplot2)
 # ============================================================
 # 2. LOAD DATA
 # ============================================================
-
+# Folder where the files are stored:
 setwd("C:/Users/apchr/OneDrive/Desktop/Supplementary Material (S3)/master_thesis_R")
 
 datei <- "vent species.xlsx"
@@ -41,7 +42,7 @@ decapoda <- read_excel(
 # ============================================================
 # 3. DEFINE IUCN CATEGORIES
 # ============================================================
-
+# Combines these categories into one vector
 kategorien <- c("LC", "NT", "VU", "EN", "CR")
 
 
