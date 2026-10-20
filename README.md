@@ -26,7 +26,7 @@ This study: species and occurrence data collected and compiled as part of this s
 
 Vent molluscs: published IUCN data for hydrothermal-vent mollusc species;
 
-Decapoda: a dataset compiled and processed within the research group for hydrothermal-vent decapod species.
+Decapoda: a dataset compiled and processed within the research group.
 
 The original data files are not included in this repository.
 
