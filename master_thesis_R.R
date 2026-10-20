@@ -294,6 +294,7 @@ ggplot(
     text = element_text(size = 14),
     legend.position = "top"
   )
+
 # ============================================================
 # 10. CALCULATE PERCENTAGES
 # ============================================================
@@ -302,7 +303,7 @@ ggplot(
 # For each group, the number of species in each IUCN category is
 # divided by the total number of species in that group and multiplied
 # by 100.
-# Thus, the values represent the percentage of species within each
+# The values represent the percentage of species within each
 # dataset that belong to each IUCN category. The percentages for
 # each dataset add up to 100%.
 
