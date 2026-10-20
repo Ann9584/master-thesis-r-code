@@ -216,7 +216,7 @@ ggplot(
       "Combined total" = "grey50"
     ),
     labels = c(
-      "Vent molluscs" = "Vent mollusks",
+      "Vent molluscs" = "Vent molluscs",
       "This study" = "This study",
       "Decapoda" = "Decapoda",
       "Combined total" = "Combined total"
