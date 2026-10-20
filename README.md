@@ -12,6 +12,8 @@ comparing IUCN categories among vent molluscs, species examined in this study, a
 
 calculating absolute and relative proportions of species within IUCN categories;
 
+statistical test to answer the question: how expanding the taxonomic coverage affects the estimated proportion of threatened hydrothermal vent-endemic species and whether the proportion of threatened species differs significantly between the previously documented vent molluscs and the newly assessed species; 
+
 visualising the global distribution and species richness of hydrothermal-vent endemic species using a 5° hexagonal grid.
 
 The individual analyses and their corresponding steps are documented directly within the R scripts.
